@@ -8,11 +8,11 @@ module tb_i2s_rx_master();
     // ==========================================
     logic        rst_n;
     logic        mclk;
-    
+
     wire         bclk;
     wire         lrck;
     logic        adcdat;
-    
+
     wire signed [15:0] left_data;
     wire signed [15:0] right_data;
     wire               data_valid;
@@ -65,17 +65,17 @@ module tb_i2s_rx_master();
             is_right <= 1'b0;
         end else begin
             lrck_d <= lrck;
-            
+
             // 边沿检测：LRCK 发生翻转
             if (lrck != lrck_d) begin
                 // 【精髓修复】在 LRCK 翻转的这一个 BCLK 周期，输出上一个声道的最后一位 (LSB)！
                 // 如果 lrck 刚变成 1(右声道)，说明左声道刚结束，补发左声道的 bit 0
                 // 如果 lrck 刚变成 0(左声道)，说明右声道刚结束，补发右声道的 bit 0
                 adcdat   <= lrck ? TEST_LEFT_VAL[0] : TEST_RIGHT_VAL[0];
-                
+
                 bit_idx  <= 15;      // 准备在下一个 BCLK 周期发送 MSB
-                is_right <= lrck;    
-            end 
+                is_right <= lrck;
+            end
             // 正常的帧内数据移位过程
             else begin
                 if (bit_idx > 0) begin
@@ -107,9 +107,9 @@ module tb_i2s_rx_master();
         // 严格校验后续 3 帧
         repeat(3) begin
             @(posedge data_valid);
-            $display("[%0t] FRAME RECEIVED -> Left: 0x%h | Right: 0x%h", 
+            $display("[%0t] FRAME RECEIVED -> Left: 0x%h | Right: 0x%h",
                      $time, left_data, right_data);
-                     
+
             if (left_data !== TEST_LEFT_VAL || right_data !== TEST_RIGHT_VAL) begin
                 $display(">>> ERROR: Data Mismatch! <<<");
                 $stop;

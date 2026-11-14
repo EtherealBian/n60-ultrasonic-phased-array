@@ -266,4 +266,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports {transducer_io[58]}]
 # E11 -> JP1_35 -> V12
 set_property PACKAGE_PIN V12 [get_ports {transducer_io[59]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {transducer_io[59]}]
-

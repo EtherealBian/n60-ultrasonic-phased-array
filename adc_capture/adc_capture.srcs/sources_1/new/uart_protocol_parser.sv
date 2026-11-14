@@ -4,11 +4,11 @@
 module uart_protocol_parser (
     input  logic        clk,
     input  logic        rst_n,
-    
+
     // 来自 UART RX 底层模块的信号
     input  logic [7:0]  rx_data,
     input  logic        rx_done,
-    
+
     // 输出给 60 路 PWM 发生器的参数
     output logic [7:0]  o_amplitude [0:59],
     output logic [11:0] o_phase     [0:59],
@@ -34,7 +34,7 @@ module uart_protocol_parser (
     logic [6:0] byte_cnt;           // 计数器 (0~59)
     logic [7:0] calc_sum;           // 本地计算的校验和
     logic [7:0] temp_phase_L;       // 暂存相位的低字节
-    
+
     // 影子寄存器 (Shadow Registers) - 只有校验通过才会覆盖输出
     logic [7:0]  shadow_amplitude [0:59];
     logic [11:0] shadow_phase     [0:59];
@@ -46,13 +46,13 @@ module uart_protocol_parser (
             byte_cnt <= '0;
             calc_sum <= '0;
             o_update_pulse <= 1'b0;
-            
+
             // 复位时默认参数：幅度满载，相位为0 (指向正前方)
             for (int i = 0; i < 60; i++) begin
                 o_amplitude[i] <= 8'd255;
                 o_phase[i]     <= 12'd0;
             end
-        end 
+        end
         else begin
             o_update_pulse <= 1'b0; // 默认拉低
 
@@ -62,13 +62,13 @@ module uart_protocol_parser (
                     S_IDLE: begin
                         if (rx_data == 8'hAA) state <= S_HEAD2;
                     end
-                    
+
                     // ----------------------------------------
                     S_HEAD2: begin
                         if (rx_data == 8'hBB) state <= S_CMD;
                         else state <= S_IDLE; // 假包头，退回
                     end
-                    
+
                     // ----------------------------------------
                     S_CMD: begin
                         if (rx_data == 8'h01) begin
@@ -79,12 +79,12 @@ module uart_protocol_parser (
                             state <= S_IDLE; // 不认识的指令
                         end
                     end
-                    
+
                     // ----------------------------------------
                     S_AMP: begin
                         calc_sum <= calc_sum + rx_data; // 累加校验和
                         shadow_amplitude[byte_cnt] <= rx_data;
-                        
+
                         if (byte_cnt == 7'd59) begin
                             byte_cnt <= '0;
                             state    <= S_PHASE_L;
@@ -92,20 +92,20 @@ module uart_protocol_parser (
                             byte_cnt <= byte_cnt + 1'b1;
                         end
                     end
-                    
+
                     // ----------------------------------------
                     S_PHASE_L: begin
                         calc_sum <= calc_sum + rx_data;
                         temp_phase_L <= rx_data; // 暂存低字节
                         state <= S_PHASE_H;
                     end
-                    
+
                     // ----------------------------------------
                     S_PHASE_H: begin
                         calc_sum <= calc_sum + rx_data;
                         // 拼合 12 位相位: {高位低4位, 低字节8位}
                         shadow_phase[byte_cnt] <= {rx_data[3:0], temp_phase_L};
-                        
+
                         if (byte_cnt == 7'd59) begin
                             state <= S_CHECKSUM;
                         end else begin
@@ -113,7 +113,7 @@ module uart_protocol_parser (
                             state    <= S_PHASE_L;
                         end
                     end
-                    
+
                     // ----------------------------------------
                     S_CHECKSUM: begin
                         if (rx_data == calc_sum) begin
@@ -122,13 +122,13 @@ module uart_protocol_parser (
                             state <= S_IDLE;  // 校验失败，丢弃这包数据
                         end
                     end
-                    
+
                     // ----------------------------------------
                     S_TAIL1: begin
                         if (rx_data == 8'h0D) state <= S_TAIL2;
                         else state <= S_IDLE;
                     end
-                    
+
                     // ----------------------------------------
                     S_TAIL2: begin
                         if (rx_data == 8'h0A) begin
@@ -141,7 +141,7 @@ module uart_protocol_parser (
                         end
                         state <= S_IDLE; // 无论成败，回到空闲状态准备下一帧
                     end
-                    
+
                     // ----------------------------------------
                     default: state <= S_IDLE;
                 endcase

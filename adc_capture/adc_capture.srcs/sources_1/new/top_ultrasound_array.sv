@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
 module top_ultrasound_array (
-    input  logic clk_50m,     
-    input  logic async_rst_n, 
+    input  logic clk_50m,
+    input  logic async_rst_n,
 
     input  logic uart_rx,
     input  logic key_in,
@@ -24,7 +24,7 @@ module top_ultrasound_array (
     input  logic wm8978_adcdat
 );
 
-    // 内部倍频到 100MHz 
+    // 内部倍频到 100MHz
     logic clk_100m;
     logic locked;
     mmcm_main u_mmcm (
@@ -55,9 +55,9 @@ assign config_led = !(i2c_init_done && !i2c_error);
     logic key_flag;
     key_filter u_key (
         .clk       (clk_100m),
-        .rst       (~rst_n),    
+        .rst       (~rst_n),
         .key_in    (key_in),
-        .key_flag  (key_flag),  
+        .key_flag  (key_flag),
         .key_state ()
     );
 
@@ -75,7 +75,7 @@ assign config_led = !(i2c_init_done && !i2c_error);
     // 3. I2S 接收器 (12.288MHz 时钟域)
     logic signed [15:0] i2s_left_12m, i2s_right_12m;
     logic i2s_valid_12m;
-    
+
     i2s_rx_master u_i2s (
         .rst_n      (rst_n),
         .mclk       (clk_mclk),
@@ -87,7 +87,7 @@ assign config_led = !(i2c_init_done && !i2c_error);
         .data_valid (i2s_valid_12m)  // 这是 12.288MHz 域的脉冲
     );
 
-    //跨时钟域处理 (CDC: 12.288MHz -> 100MHz) 
+    //跨时钟域处理 (CDC: 12.288MHz -> 100MHz)
     logic [2:0] valid_sync_100m;
     logic signed [15:0] i2s_left_100m, i2s_right_100m;
 
@@ -99,7 +99,7 @@ assign config_led = !(i2c_init_done && !i2c_error);
         end else begin
             // 经典打拍：将 12M 域的 valid 信号同步到 100M 域
             valid_sync_100m <= {valid_sync_100m[1:0], i2s_valid_12m};
-            
+
             // 边沿检测：当在 100M 域检测到 valid 的上升沿时
             // 此时 i2s_left_12m 的数据早就稳定了几十纳秒，读取绝对安全！
             if (valid_sync_100m[2:1] == 2'b01) begin
@@ -120,11 +120,11 @@ assign config_led = !(i2c_init_done && !i2c_error);
     // =========================================================
     // 6. 音频流处理核心 (噪声门 -> 放大 -> 饱和截断)
     // =========================================================
-    
+
     // Stage 1: 数字噪声门
     logic signed [15:0] gated_audio;
     localparam signed [15:0] NOISE_THRESHOLD = 16'sd300; // 根据实际底噪调整
-    
+
     always_comb begin
         // 提取绝对值进行判断，滤除微小底噪
         if (i2s_left_100m > NOISE_THRESHOLD || i2s_left_100m < -NOISE_THRESHOLD)
@@ -137,21 +137,21 @@ assign config_led = !(i2c_init_done && !i2c_error);
     logic signed [21:0] scaled_audio;
     // 这里的放大倍数可以根据需要调整 (例如 4, 8, 16)
 
-    assign scaled_audio = gated_audio*8; 
+    assign scaled_audio = gated_audio*8;
 
     // Stage 3: 多路选择与饱和限幅器 (防爆音)
     logic signed [15:0] final_audio_stream;
-    
+
     always_comb begin
         if (audio_mode == 1'b0) begin
             final_audio_stream = sin_1k_16b; // 1kHz DDS 测试模式
         end else begin
             // 外部音频模式：执行硬限幅，绝对禁止数据溢出回绕
-            if (scaled_audio > 22'sd32767) 
+            if (scaled_audio > 22'sd32767)
                 final_audio_stream = 16'sd32767;      // 正向削峰
-            else if (scaled_audio < -22'sd32768) 
+            else if (scaled_audio < -22'sd32768)
                 final_audio_stream = -16'sd32768;     // 负向削峰
-            else 
+            else
                 final_audio_stream = scaled_audio[15:0]; // 安全区间原样输出
         end
     end
@@ -161,10 +161,10 @@ assign config_led = !(i2c_init_done && !i2c_error);
     logic [11:0] beam_phase     [0:59];
     logic [7:0]  uart_byte;
     logic        uart_done;
-    
+
     uart_rx #(.CLK_FRE(100),
      .BAUD_RATE(115200)) u_uart_rx (
-        .clk(clk_100m), 
+        .clk(clk_100m),
         .rst_n(rst_n),
          .i_uart_rx(uart_rx),
         .o_uart_data(uart_byte),
@@ -173,11 +173,11 @@ assign config_led = !(i2c_init_done && !i2c_error);
 
     logic o_update_pulse; // 当新数据准备好时，产生一个时钟周期的脉冲，通知 PWM 模块更新参数
     uart_protocol_parser u_parser (
-        .clk(clk_100m), 
-        .rst_n(rst_n), 
+        .clk(clk_100m),
+        .rst_n(rst_n),
         .rx_data(uart_byte),
          .rx_done(uart_done),
-        .o_amplitude(beam_amplitude), 
+        .o_amplitude(beam_amplitude),
         .o_phase(beam_phase),
         .o_update_pulse(o_update_pulse)
     );
@@ -185,13 +185,13 @@ assign config_led = !(i2c_init_done && !i2c_error);
 logic led_s;
 always_ff @( posedge clk_100m or negedge rst_n ) begin
     if(!rst_n)begin
-        
-        led_s <= 1'b0; 
+
+        led_s <= 1'b0;
     end
 
     else begin
         if(o_update_pulse)begin
-            led_s <= ~led_s; 
+            led_s <= ~led_s;
         end
          else begin
             led_s <= led_s;

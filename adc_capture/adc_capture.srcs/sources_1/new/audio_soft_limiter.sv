@@ -14,10 +14,10 @@ module audio_soft_limiter (
     logic [21:0] abs_val_d1;
 
     always_ff @(posedge clk) begin
-        sign_d1 <= audio_in[21]; 
-        if (audio_in[21]) 
-            abs_val_d1 <= -audio_in; 
-        else 
+        sign_d1 <= audio_in[21];
+        if (audio_in[21])
+            abs_val_d1 <= -audio_in;
+        else
             abs_val_d1 <= audio_in;
     end
 
@@ -40,7 +40,7 @@ module audio_soft_limiter (
     // Stage 3: 例化 Vivado ROM IP 核
     // ==========================================
     logic [15:0] rom_data_d3;
-    
+
     soft_knee_rom_ip u_soft_limiter_rom (
         .clka  (clk),           // 输入时钟
         .addra (rom_addr_d2),   // 15位查表地址

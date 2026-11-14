@@ -9,7 +9,7 @@ module dds_generator (
 
     // 1kHz FTW = (1000 * 2^32) / 100_000_000 = 42950
     localparam [31:0] FTW_1K = 32'd42950;
-    
+
     reg [31:0] phase_acc;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) phase_acc <= 32'd0;
@@ -18,10 +18,10 @@ module dds_generator (
 
     // 高 8 位作为全局相位 (0~255)
     wire [7:0] phase_idx = phase_acc[31:24];
-    
+
     // 严格取低 6 位作为 0~63 的查表物理地址，杜绝越界
-    wire [5:0] lut_idx = phase_idx[5:0]; 
-    
+    wire [5:0] lut_idx = phase_idx[5:0];
+
     //寄存器宽度升为 15 位，存储真正的 16 位正弦波第一象限绝对值
     // 公式: round(32767 * sin(pi/2 * i/64))
     reg [14:0] quarter_lut [0:63];
@@ -47,7 +47,7 @@ module dds_generator (
     // phase_idx[6] 控制象限翻转，实现镜像平滑
     // 取出的数据线拓宽到 15 位
     wire [14:0] lut_val = (phase_idx[6]) ? quarter_lut[63 - lut_idx] : quarter_lut[lut_idx];
-    
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) sin_1k <= 16'd0;
         else begin

@@ -12,8 +12,8 @@ module i2s_rx_master (
     input  logic        adcdat,      // ADC 串行数据输入
 
     // FPGA 内部输出总线
-    output logic signed [15:0] left_data,  
-    output logic signed [15:0] right_data, 
+    output logic signed [15:0] left_data,
+    output logic signed [15:0] right_data,
     output logic               data_valid  // 脉冲: 一帧(左右)接收完毕
 );
 
@@ -45,11 +45,11 @@ module i2s_rx_master (
         end else if (bclk_fall) begin
             // 在 BCLK 下降沿切换状态，确保建立时间
             bit_cnt <= bit_cnt + 1'b1;
-            
+
             // I2S 规范: 0 为左声道，1 为右声道
             // [核心修改点] 拓宽帧格式：0~31 为左声道，32~63 为右声道
             if (bit_cnt == 6'd63)      lrck <= 1'b0;
-            else if (bit_cnt == 6'd31) lrck <= 1'b1; 
+            else if (bit_cnt == 6'd31) lrck <= 1'b1;
         end
     end
 
@@ -63,11 +63,11 @@ module i2s_rx_master (
             data_valid <= 1'b0;
         end else begin
             data_valid <= 1'b0; // 默认拉低脉冲
-            
+
             if (bclk_rise) begin
                 // 在 BCLK 上升沿采样串行数据
                 shift_reg <= {shift_reg[14:0], adcdat};
-                
+
                 // [核心修改点] 完美对齐的采样点：
                 // 左声道：1bit延迟 + 16bit数据 = 在第16拍抓取 (bit_cnt == 16)
                 if (bit_cnt == 6'd16) begin
