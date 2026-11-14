@@ -2,13 +2,19 @@
 
 [中文](#中文) · [English](#english)
 
-![N60 phased-array geometry, host control and FPGA signal flow](docs/project-overview.png)
+<p align="center">
+  <img src="docs/n60-hardware.jpg" width="800" alt="N60 超声相控阵实拍，包含五组阵元与 FPGA 开发板">
+  <br>
+  <em>N60 实物 · Hardware prototype</em>
+</p>
 
 ## 中文
 
 2026 年利利普杯工程。上位机计算 60 路阵元的相位与幅度，通过 UART 下发给 FPGA。FPGA 将音频与各阵元参数结合，生成 60 路 40 kHz 载波 PWM，供外部驱动级使用。
 
 ### 原理与实现
+
+![N60 phased-array geometry, host control and FPGA signal flow](docs/project-overview.png)
 
 | 环节 | 实现 |
 | --- | --- |
