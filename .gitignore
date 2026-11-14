@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+analysis_outputs/
+.Xil/
+*.jou
+*.log
+*.cache/
+*.gen/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.dcp
+*.bit
